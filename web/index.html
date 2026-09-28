@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>票务自助机 · 纸卷补给与退款核验平台</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="logo"><span class="dot"></span>票务自助机运营平台</div>
+  <nav class="tabs" id="tabs">
+    <button data-view="map" class="active">终端地图</button>
+    <button data-view="inventory">纸卷库存</button>
+    <button data-view="routes">补给路线</button>
+    <button data-view="faults">故障队列</button>
+    <button data-view="orders">订单核验</button>
+    <button data-view="refunds">退款台账</button>
+  </nav>
+  <div class="role-switch">
+    当前身份
+    <select id="roleSelect">
+      <option value="supervisor">王主管 · 主管</option>
+      <option value="replenisher">林补给 · 补给员</option>
+      <option value="finance">钱财务 · 财务</option>
+      <option value="viewer">访客 · 只读</option>
+    </select>
+    <select id="userSelect" style="display:none"></select>
+  </div>
+</header>
+
+<main>
+  <!-- ============ 终端地图 ============ -->
+  <section class="view active" id="view-map">
+    <h2 class="page-title">终端地图</h2>
+    <p class="page-sub">纸量刻度显示当前纸卷余量占比;号段用尽、卡纸或离线的终端立即停止发票,不会跳号续打。点击终端查看详情。</p>
+    <div class="cards" id="mapStats"></div>
+    <div class="panel">
+      <h3>终端矩阵</h3>
+      <div class="map-wrap" id="map"></div>
+      <div class="legend">
+        <span><i style="background:#3949ab"></i>正常在线</span>
+        <span><i style="background:#c77700"></i>缺纸/号段用尽</span>
+        <span><i style="background:#c62828"></i>卡纸等故障</span>
+        <span><i style="background:#9aa0b4"></i>离线</span>
+        <span style="margin-left:auto">刻度每格 10%,亮条=剩余纸量</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 纸卷库存 ============ -->
+  <section class="view" id="view-inventory">
+    <h2 class="page-title">纸卷库存</h2>
+    <p class="page-sub">每卷纸自带一个连续票据号段;装机后号段挂载到终端,票号由平台统一连续分配。</p>
+    <div class="cards" id="invStats"></div>
+    <div class="panel">
+      <h3>纸卷批次</h3>
+      <div style="overflow-x:auto"><table class="grid" id="batchTable"></table></div>
+    </div>
+    <div class="panel">
+      <h3>新卷入库</h3>
+      <div class="btn-row" style="align-items:flex-end">
+        <div><label class="fld">供应商</label><input id="nb_supplier" value="晨光纸业"></div>
+        <div><label class="fld">票数</label><input id="nb_count" type="number" value="200" style="width:90px"></div>
+        <div><label class="fld">号段起</label><input id="nb_start" class="mono" type="number" value="1002001" style="width:120px"></div>
+        <div><label class="fld">号段止</label><input id="nb_end" class="mono" type="number" value="1002200" style="width:120px"></div>
+        <div><label class="fld">方向</label>
+          <select id="nb_rev"><option value="0">正常</option><option value="1">倒装(演示拦截)</option></select>
+        </div>
+        <button class="btn yellow" onclick="receiveBatch()">入库</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 补给路线 ============ -->
+  <section class="view" id="view-routes">
+    <h2 class="page-title">补给路线</h2>
+    <p class="page-sub">补给员扫码后才能开柜;两名补给员同时领取同一任务时只保留一个锁定者。换卷前后必须留存计数器照片。</p>
+    <div id="routesList"></div>
+    <div class="panel">
+      <h3>补给任务</h3>
+      <div id="taskList"></div>
+    </div>
+    <div class="panel">
+      <h3>为故障终端新建补给任务</h3>
+      <div class="btn-row">
+        <select id="newTaskTerm"></select>
+        <input id="newTaskNote" placeholder="备注(如:号段用尽)" style="width:260px">
+        <button class="btn yellow" onclick="createTask()">创建任务</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 故障队列 ============ -->
+  <section class="view" id="view-faults">
+    <h2 class="page-title">故障队列与复核</h2>
+    <p class="page-sub">扣款成功未出票、重复出票、退款超时、纸卷倒装、设备离线分别进入复核队列。人工补票必须关联故障工单。</p>
+    <div class="cards" id="faultStats"></div>
+    <div class="panel">
+      <h3>复核队列 <span class="tag">五类事件</span></h3>
+      <div style="overflow-x:auto"><table class="grid" id="reviewTable"></table></div>
+    </div>
+    <div class="panel">
+      <h3>故障工单</h3>
+      <div style="overflow-x:auto"><table class="grid" id="woTable"></table></div>
+    </div>
+  </section>
+
+  <!-- ============ 订单核验 ============ -->
+  <section class="view" id="view-orders">
+    <h2 class="page-title">订单核验</h2>
+    <p class="page-sub">支付与出票均由进程内模拟适配器完成。相同幂等键重放不会二次扣款或出票。</p>
+    <div class="panel">
+      <h3>模拟购票 / 幂等测试</h3>
+      <div class="btn-row" style="align-items:flex-end">
+        <div><label class="fld">终端</label><select id="buyTerm"></select></div>
+        <div><label class="fld">金额(分)</label><input id="buyAmount" type="number" value="500" style="width:100px"></div>
+        <div><label class="fld">幂等键(留空则随机)</label><input id="buyIdem" class="mono" placeholder="同键重复提交只出一张票" style="width:230px"></div>
+        <button class="btn" onclick="doBuy(false)">购票</button>
+        <button class="btn ghost" onclick="doBuy(true)">用相同幂等键再试一次</button>
+      </div>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn ghost" onclick="injectFault('jam')">注入:卡纸</button>
+        <button class="btn ghost" onclick="injectFault('dup')">注入:重复出票</button>
+        <button class="btn ghost" onclick="goOffline()">模拟离线 + 暂存事件</button>
+        <button class="btn yellow" onclick="goOnline()">恢复在线并补传</button>
+        <button class="btn ghost" onclick="resetFaults()">清除故障注入</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>收款订单</h3>
+      <div style="overflow-x:auto"><table class="grid" id="orderTable"></table></div>
+    </div>
+    <div class="panel">
+      <h3>设备回执(本地文件)</h3>
+      <div style="overflow-x:auto"><table class="grid" id="receiptTable"></table></div>
+    </div>
+  </section>
+
+  <!-- ============ 退款台账 ============ -->
+  <section class="view" id="view-refunds">
+    <h2 class="page-title">退款台账</h2>
+    <p class="page-sub">退款只允许对应原订单一次;批准出款限财务角色。打开详情可查看「原订单 → 设备回执 → 处理动作」纵向证据链。</p>
+    <div class="cards" id="refundStats"></div>
+    <div class="panel">
+      <h3>退款单</h3>
+      <div style="overflow-x:auto"><table class="grid" id="refundTable"></table></div>
+    </div>
+    <div class="panel">
+      <h3>按原订单发起退款</h3>
+      <div class="btn-row" style="align-items:flex-end">
+        <div><label class="fld">原订单号</label><input id="rf_order" class="mono" style="width:240px" placeholder="ord_xxx"></div>
+        <div><label class="fld">申请人</label><input id="rf_applicant" value="乘客" style="width:120px"></div>
+        <div><label class="fld">原因</label><input id="rf_reason" value="行程取消" style="width:220px"></div>
+        <button class="btn yellow" onclick="applyRefund()">提交退款申请</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- 抽屉:终端详情/任务/证据链 -->
+<div class="drawer-mask" id="mask" onclick="closeDrawer()"></div>
+<aside class="drawer" id="drawer">
+  <header><h3 id="drawerTitle">详情</h3><button class="x" onclick="closeDrawer()">×</button></header>
+  <div class="body" id="drawerBody"></div>
+</aside>
+
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
