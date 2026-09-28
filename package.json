@@ -1,0 +1,16 @@
+{
+  "name": "ticket-kiosk-platform",
+  "version": "1.0.0",
+  "description": "票务自助机纸卷补给与退款核验平台（模拟数据 / SQLite / 进程内适配器）",
+  "type": "commonjs",
+  "private": true,
+  "scripts": {
+    "start": "node server/index.js",
+    "demo": "node server/index.js --demo",
+    "test": "node test/run.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT"
+}

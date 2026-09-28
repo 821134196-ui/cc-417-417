@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>票务自助机 · 纸卷补给与退款核验平台</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">票</span>
+    <div>
+      <h1>票务自助机运营平台</h1>
+      <div class="subtitle">纸卷补给 · 号段连续 · 故障复核 · 退款核验（模拟环境）</div>
+    </div>
+  </div>
+  <nav class="nav" id="nav">
+    <button data-view="map" class="nav-btn active">终端地图</button>
+    <button data-view="rolls" class="nav-btn">纸卷库存</button>
+    <button data-view="routes" class="nav-btn">补给路线</button>
+    <button data-view="faults" class="nav-btn">故障队列 <span class="badge" id="navFault"></span></button>
+    <button data-view="orders" class="nav-btn">订单核验</button>
+    <button data-view="refunds" class="nav-btn">退款台账</button>
+  </nav>
+</header>
+
+<div class="kpi-strip" id="kpiStrip"></div>
+
+<main class="content" id="view"></main>
+
+<div class="toast" id="toast"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>
